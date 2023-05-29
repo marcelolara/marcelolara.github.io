@@ -1,3 +1,12 @@
+
+/** @type {import('next').NextConfig} */
+
+const nextConfig = {
+  images: {
+    unoptimized: true
+  }
+}
+
 const withNextra = require('nextra')({
   theme: 'nextra-theme-docs',
   themeConfig: './theme.config.jsx'
@@ -5,7 +14,5 @@ const withNextra = require('nextra')({
  
 module.exports = {
   ...withNextra(),
-  images: {
-    unoptimized: true
-  }
+  ...nextConfig
 }
