@@ -1,7 +1,11 @@
 export default {
-  logo: <span>Marcelo Lara</span>,
+  logo: (
+    <span style={{ fontWeight: 800 }}>
+      Marcelo Lara
+    </span>
+  ),
   project: {
-    link: 'https://github.com/shuding/nextra'
+    link: 'https://github.com/marcelolara'
   }
   // ...
 }
