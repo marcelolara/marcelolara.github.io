@@ -3,11 +3,15 @@
 ![](/assets/nextra.jpg)
 
 ## Intro
-Buscando la forma de difundir las cosas que voy realizando de forma simple y en un solo lugar, terminé creando este espacio en [github-pages](//pages.github.com) con un sitio estático generado en [Next.js](https://nextjs.org), [nextra](https://nextra.site), [github actions](https://github.com/features/actions) y [markdown](https://daringfireball.net/projects/markdown/).
+Buscando la forma de difundir las cosas que voy realizando de forma simple y en un solo lugar, terminé creando este 
+espacio en [github-pages](https://pages.github.com) con un sitio estático generado en [Next.js](https://nextjs.org), 
+[nextra](https://nextra.site), [github actions](https://github.com/features/actions) y 
+[markdown](https://daringfireball.net/projects/markdown/).
 
-De esta manera es posible crear el contenido en archivos mdx que luego serán convertidos en un sitio estático al momento de subirlos a github.
+De esta manera es posible crear el contenido en archivos mdx que luego serán convertidos en un sitio estático al momento
+ de subirlos a github.
 
-En este artículo compartiré de que forma fue hecha la implementación.
+En este artículo compartiré de que forma fue construido.
 
 ## Manos a la obra
 ### Next.js
@@ -18,7 +22,12 @@ El primer paso es instalar una aplicación Next, lo recomendable es realizarlo m
 npx create-next-app@latest
 ```
 
-En la instalación verás la siguientes instrucciones, Que excepto por el nombre del proyecto, el resto recomiendo dejarlo con el valor por defecto:
+En la instalación verás la siguientes instrucciones, excepto por el nombre del proyecto, el resto recomiendo dejarlo
+con el valor por defecto:
+
+Para el nombre del proyecto, recomendaría ponerle uno que concuerde con el que tendrá el repositorio dentro
+github pages, que se verá en la segunda parte, [acá](https://pages.github.com) las recomendaciones para la creación de 
+un repositorio compatible.
 
 ```bash filename="> Terminal" copy
 What is your project named? my-app
@@ -52,7 +61,7 @@ npm i nextra nextra-theme-docs
 #### Configuración de nextra en next
 Para esto es necesario modificar el archivo de configuración de next dejándolo de la siguiente forma.
 
-```js filename="next.config.js
+```js filename="next.config.js" copy
 /** @type {import('next').NextConfig} */
 
 const nextConfig = {
@@ -77,7 +86,7 @@ pueden dar errores al momento de desplegar el sitio.
 
 ### Configuración del tema de nextra
 Es necesario crear el archivo `theme.config.jsx` dentro del directorio raiz utilizado en la configuración del tema.
-```js filename=theme.config.jsx copy
+```js filename="theme.config.jsx" copy
 export default {
   logo: <span style={{ fontWeight: 800 }}>Marcelo Lara</span>,
   project: {
@@ -94,7 +103,7 @@ Para agregar publicaciones es necesario primero crear la carpeta `pages` dentro 
 crear los archivos con extensión `mdx` que equivalen a archivos markdown compatibles con github pero con algunas ventajas 
 entregadas por react, en este caso crearemos el archivo `index.mdx`
 
-```md filename=src/pages/index.mdx copy
+```md filename="src/pages/index.mdx" copy
 # Mi primer artículo
 
 Hola, Mundo!
