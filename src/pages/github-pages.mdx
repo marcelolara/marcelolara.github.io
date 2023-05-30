@@ -1,3 +1,77 @@
+import Image from 'next/image'
+
 # Cómo desplegar un sitio nextjs-nextra en github-pages
 
-![](/assets/github-pages.png)
+![](/assets/github-pages/github-pages.png)
+
+
+## Intro
+Esta es la segunda parte de como crear un sitio usando [Next.js](https://nextjs.org) y un generador estático
+de sitios como [nextra](https://nextra.site) para ser desplegado en [github-pages](https://pages.github.com).
+
+Antes de comenzar con la parte que permite subir y desplegar el sitio, puedes revisar su construcción 
+[acá](/next-nextra).
+
+
+## Manos a la obra
+
+### Repositorio en github
+Para poder mostrar un sitio en github pages es necesario crear un repositorio con el nombre de la cuenta de github,
+organización ó proyecto para el cual será utilado, en mi caso el nombre elegido es el de mi cuenta personal.
+
+![https://github.com/marcelolara/marcelolara.github.io](/assets/github-pages/github-pages-account.png)
+[https://github.com/marcelolara/marcelolara.github.io](https://github.com/marcelolara/marcelolara.github.io)
+
+Una vez creado el repositorio, aparecerán las opciones para agregarlo a un directorio local (directorio que se encuentra
+en tu propio computador), y para el caso de este tutorial, elegiremos la que permite agregar el repositorio creado en 
+github como una referencia del origen y de esta forma subir mediante línea de comandos lo que ya se tiene avanzado de la 
+creación del sitio.
+
+```bash filename="> Terminal" copy
+git remote add origin git@github.com:<nombredelacuentadeusuario>/<nombredelrepositorio>.git
+git branch -M main
+git push -u origin main
+```
+
+
+### Github pages
+Una vez subidos los archivos del sitio es momento de configurar las acciones que permiten desplegar el sitio automáticamente
+cuando se hace un commit, esto es mediante [github actions](https://github.com/features/actions) en la sección 
+`Settings > Pages` del repositorio.
+
+![](/assets/github-pages/settings-pages.png)
+
+Luego se selecciona la opción `github actions` desde la selección de fuente para el despliegue.
+
+![](/assets/github-pages/deploy-from-github-actions.png)
+
+Se desplegará la opción de utilizar las acciones para Next.js, y es el momento de presionar el botón `Configure` para
+crear el archivo `.yml` que contendrá las acciones a realizar.
+
+![](/assets/github-pages/nextjs-actions.png)
+
+Luego de presionar el botón aparecerá el archivo que se creará para configurar el flujo del despliegue, no es necesario
+realizar modificaciones en este archivo y solo se necesita `comprometer los cambios` (commit changes...) presionando 
+el botón correspondiente.
+
+![](/assets/github-pages/commit-changes.png)
+
+Se le puede dar al commit el mensaje que se desee.
+
+<Image src="/assets/github-pages/commit-message.png" alt="" width={400} height={400} />
+
+Cuando el commit se confirma, github inmediatamente genera un despligue del sitio, el cual puede verificarse dentro la
+sección de `acciones` del repositorio.
+
+![](/assets/github-pages/repo-actions.png)
+
+Y finalmente en la URL de pages asociada a la cuenta de github, como es el caso de mi repo personal.
+[marcelolara.github.io](https://marcelolara.github.io)
+
+![](/assets/github-pages/marcelolara-github-pages.png)
+
+
+
+
+
+**Saludos y feliz código**.
