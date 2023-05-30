@@ -1,7 +1,112 @@
-# Como crear un sitio con github-page nextjs y nextra
+# Como crear un sitio con nextjs y nextra compatible con github-pages
 
 ## Intro
-Buscando la forma de difundir las cosas que voy realizando de forma simple y en un solo lugar es que terminé creando este espacio en [github-pages](//pages.github.com) con un sitio estático generado en nextjs, [nextra](https://nextra.site), [github actions](https://github.com/features/actions) y [markdown](https://daringfireball.net/projects/markdown/).
+Buscando la forma de difundir las cosas que voy realizando de forma simple y en un solo lugar, terminé creando este espacio en [github-pages](//pages.github.com) con un sitio estático generado en [Next.js](https://nextjs.org), [nextra](https://nextra.site), [github actions](https://github.com/features/actions) y [markdown](https://daringfireball.net/projects/markdown/).
+
 De esta manera es posible crear el contenido en archivos mdx que luego serán convertidos en un sitio estático al momento de subirlos a github.
 
 En este artículo compartiré de que forma fue hecha la implementación.
+
+## Manos a la obra
+### Next.js
+
+El primer paso es instalar una aplicación Next, lo recomendable es realizarlo mediante `create-next-app` que permite configurar todo de forma automática.
+
+```bash filename="> Terminal" copy
+npx create-next-app@latest
+```
+
+En la instalación verás la siguientes instrucciones, Que excepto por el nombre del proyecto, el resto recomiendo dejarlo con el valor por defecto:
+
+```bash filename="> Terminal" copy
+What is your project named? my-app
+Would you like to use TypeScript with this project? No / Yes
+Would you like to use ESLint with this project? No / Yes
+Would you like to use Tailwind CSS with this project? No / Yes
+Would you like to use `src/` directory with this project? No / Yes
+Use App Router (recommended)? No / Yes
+Would you like to customize the default import alias? No / Yes
+```
+
+En este punto ya se puede ingresar al directorio creado con el nombre del proyecto y probar que la aplicación funciona.
+
+```bash filename="> Terminal" copy
+npm run dev
+```
+
+Una vez que se comprueba que todo está bien, será necesario instalar las dependencias de nextra y configurar el tema.
+
+### Nextra
+¿Qué es nextra?, un generador de páginas estáticas para next que además incluye un par de temas preestablecidos para 
+darle forma al sitio.
+
+Para instalarlo en necesario agregar sus dependencias dentro del proyecto además del tema elegido dentro de los propuestos
+Por el mismo sitio de la documentación, en mi caso elegí el tema de la documentación.
+
+```bash filename="> Terminal" copy
+npm i nextra nextra-theme-docs
+```
+
+#### Configuración de nextra en next
+Para esto es necesario modificar el archivo de configuración de next dejándolo de la siguiente forma.
+
+```js filename="next.config.js
+/** @type {import('next').NextConfig} */
+
+const nextConfig = {
+  images: {
+    unoptimized: true
+  }
+}
+
+const withNextra = require('nextra')({
+  theme: 'nextra-theme-docs',
+  themeConfig: './theme.config.jsx'
+})
+ 
+module.exports = {
+  ...withNextra(),
+  ...nextConfig
+}
+```
+
+Esto le dirá a next que utilizaremos nextra, además de solucionar algunos problemas de compilación de github actions que 
+pueden dar errores al momento de desplegar el sitio.
+
+### Configuración del tema de nextra
+Es necesario crear el archivo `theme.config.jsx` dentro del directorio raiz utilizado en la configuración del tema.
+```js filename=theme.config.jsx copy
+export default {
+  logo: <span style={{ fontWeight: 800 }}>Marcelo Lara</span>,
+  project: {
+    link: 'https://github.com/marcelolara'
+  }
+  // ...
+}
+```
+Para saber más sobre la configuración del tema, se puede revisar [acá](https://nextra.site/docs/docs-theme/theme-configuration).
+
+
+### Creación de artículos
+Para agregar publicaciones es necesario primero crear la carpeta `pages` dentro del directorio `src` y dentro de ella
+crear los archivos con extensión `mdx` que equivalen a archivos markdown compatibles con github pero con algunas ventajas 
+entregadas por react, en este caso crearemos el archivo `index.mdx`
+
+```md filename=src/pages/index.mdx copy
+# Mi primer artículo
+
+Hola, Mundo!
+```
+
+### Eliminar archivos conflictivos
+Para que la aplicación funcione correctamente, es necesario eliminar la carpeta `app` que fue creada automáticamente con 
+la instalación de next y que genera conflicto con los archivos que están dentro de `pages`.
+
+## Testear el funcionamiento
+En este punto nuevamente se puede probar si la aplicación funciona correctamente iniciándola desde el terminal.
+
+```bash filename="> Terminal" copy
+npm run dev
+```
+
+Y por defecto se puede abrir la aplicación desde el navegador en [http://localhost:3000](http://localhost:3000).
