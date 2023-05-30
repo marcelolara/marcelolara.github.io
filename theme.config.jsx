@@ -3,5 +3,5 @@ export default {
   project: {
     link: 'https://github.com/marcelolara'
   },
-  docsRepositoryBase: 'https://github.com/marcelolara/blob/main/docs/pages'
+  docsRepositoryBase: 'https://github.com/marcelolara/marcelolara.github.io'
 }
