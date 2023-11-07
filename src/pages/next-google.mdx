@@ -1,0 +1,143 @@
+# Desplegar sitio web nextjs en google cloud platform
+
+## Crear projecto nextjs
+
+1. Crear un nuevo proyecto siguiendo la documentacion oficial de
+[nextjs](https://nextjs.org/docs/getting-started/installation).
+
+
+## Dockerizar el proyecto
+Para dockerizar el proyecto se debe crear un archivo llamado `Dockerfile` en la raiz del proyecto
+el cual contendrá multiples escenarios para haer los despliegues más rápidos.
+y eficientes.
+
+```dockerfile
+FROM node:18-alpine as base
+RUN apk add --no-cache g++ make py3-pip libc6-compat
+WORKDIR /app
+COPY package*.json ./
+EXPOSE 3000
+
+FROM base as builder
+WORKDIR /app
+COPY . .
+RUN npm run build
+
+
+FROM base as production
+WORKDIR /app
+
+ENV NODE_ENV=production
+RUN npm ci
+
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nextjs -u 1001
+USER nextjs
+
+
+COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/public ./public
+
+CMD npm start
+
+FROM base as dev
+ENV NODE_ENV=development
+RUN npm install 
+COPY . .
+CMD npm run dev
+```
+
+## Docker Compose
+Luego agregamos el archivo `docker-compose.yml` para hacer más simple el proceso
+de construir el contenedor y ejecutarlo.
+
+```yml
+version: '3.8'
+services:
+  app:
+    build:
+      context: ./
+      target: dev
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    ports:
+      - "3000:3000"
+```
+
+Ahora podemos inciar el proyecto de forma local con el comando.
+
+```bash 
+docker-compose up
+```
+
+## Desplegar en google cloud platform
+Para desplegar el código en Google Cloud Run usaremos el 
+práctico botón de Cloud Run. El que agregaremos en el archivo `README.md` de 
+nuestro proyecto.
+
+```markdown
+[![Run on Google Cloud](https://deploy.cloud.run/button.svg)](https://deploy.cloud.run)
+```
+
+Luego de hacer click en el botón, nos pedirá que seleccionemos el proyecto de 
+google cloud
+
+Luego creamos el archivo `app.json` en la raiz del proyecto con el siguiente 
+contenido.
+
+```json
+{
+  "name": "nextjs",
+  "options": {
+    "allow-unauthenticated": true,
+    "memory": "256Mi",
+    "cpu": "1",
+    "port": 3000,
+    "http2": false
+  }
+}
+```
+
+Por defecto, Cloud Run espera que las aplicaciones se ejecuten en el puerto 8080, 
+por lo que este archivo app.json le indica a Cloud Run que escuche en el puerto 
+3000 en lugar del predeterminado.
+
+Adicionalmente, también le indica a Cloud Run que abra la aplicación para que
+sea de acceso público con `allow-unauthenticated` establecido en `true`. Luego
+se le indica que use 1 CPU y 256MB de memoria para cada contenedor.
+Finalmente, le indica a Cloud Run que no use HTTP2 para este servicio.
+
+
+## Subiendo el proyecto a github
+Para subir el proyecto a github, primero debemos crear un repositorio en github
+y luego subir el proyecto con los siguientes comandos.
+
+```bash
+gh repo create (Seguir los pasos que indica la consola)
+```
+
+```bash
+? What would you like to do? **Push an existing local repository to GitHub**
+? Path to local repository **.**
+? Repository name **nextjs-docker-githubaction-google-cloud**
+? Repository owner **<YOUR_USER>**
+? Description 
+? Visibility **Public / private**
+✓ Created repository <YOUR_USER>/nextjs-docker-githubaction-google-cloud on GitHub
+? Add a remote? **Yes**
+? What should the new remote be called? **origin**
+✓ Added remote git@github.com:<YOUR_USER>/nextjs-docker-githubaction-google-cloud.git
+? Would you like to push commits from the current branch to "origin"? Yes
+...
+✓ Pushed commits to git@github.com:<YOUR_USER>/nextjs-docker-githubaction-google-cloud.git
+```
+
+
+
+
+## Desplegar en google cloud platform con github actions
