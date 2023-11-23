@@ -1,0 +1,135 @@
+import Comments from '../components/Comments'
+
+# Desplegar sitio web nextjs en google cloud platform
+
+## Crear proyecto nextjs
+
+1. Crear un nuevo proyecto siguiendo la documentación oficial de
+[nextjs](https://nextjs.org/docs/getting-started/installation).
+
+
+## Dockerizar el proyecto
+Para dockerizar el proyecto se debe crear un archivo llamado `Dockerfile` en la 
+raiz del proyecto con el siguiente contenido.
+
+```dockerfile filename="Dockerfile" copy
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+EXPOSE 3000
+CMD npm run dev
+```
+
+### Docker Compose
+Luego agregamos el archivo `docker-compose.yml` para hacer más simple el proceso
+de construir el contenedor y ejecutarlo.
+
+```yml filename="docker-compose.yml" copy
+version: '3.8'
+services:
+  app:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    ports:
+      - "3000:3000"
+```
+
+Ahora podemos iniciar el proyecto de forma local con el comando.
+
+```bash filename="> Terminal" copy 
+docker-compose up
+```
+
+## Desplegar en google cloud platform
+
+Creamos el archivo `app.json` en la raiz del proyecto con el siguiente 
+contenido.
+
+```json filename="app.json" copy
+{
+  "name": "nextjs",
+  "options": {
+    "allow-unauthenticated": true,
+    "memory": "256Mi",
+    "cpu": "1",
+    "port": 3000,
+    "http2": false
+  }
+}
+```
+
+Por defecto, Cloud Run espera que las aplicaciones se ejecuten en el puerto 8080, 
+por lo que este archivo app.json le indica a Cloud Run que escuche en el puerto 
+3000 en lugar del predeterminado.
+
+Adicionalmente, también le indica a Cloud Run que abra la aplicación para que
+sea de acceso público con `allow-unauthenticated` establecido en `true`. Luego
+se le indica que use 1 CPU y 256MB de memoria para cada contenedor.
+Finalmente, le indica a Cloud Run que no use HTTP2 para este servicio.
+
+
+### Probando el despliegue a google cloud platform
+
+Para este caso usaremos el cli de google cloud platform, para instalarlo
+se puede seguir la documentación oficial de 
+[google cloud platform](https://cloud.google.com/sdk/docs/install) según el
+sistema operativo que se esté usando.
+
+Luego de instalar el cli, se debe iniciar sesión con el siguiente comando.
+
+```bash filename="> Terminal" copy
+gcloud auth login
+```
+
+En este punto es posible obtener los proyectos ya creados en GCP de la siguiente
+forma.
+
+```bash filename="> Terminal" copy
+gcloud projects list
+```
+
+En caso de no tener ninguno, o querer crear uno nuevo, se puede hacer con el
+siguiente comando.
+
+```bash filename="> Terminal" copy
+gcloud projects create <PROJECT_ID>
+```
+
+Una vez resuelto el problema del proyecto a elegir, este se puede configur
+con el siguiente comando.
+
+```bash filename="> Terminal" copy
+gcloud config set project <PROJECT_ID>
+```
+
+Ahora podemos desplegar el proyecto con el siguiente comando, al ser un comando
+sin argumentos, se abrirá una interfaz para configurar el despliegue. 
+
+```bash filename="> Terminal" copy
+gcloud run deploy
+```
+
+Para facilitar procesos posteriores de despliegue automatizados como el uso de 
+gitgub actions es conveniente aceptar todas las opciones que entrega la interfaz.
+
+En caso de querer hacerlo de forma más rápida se puede revisar la documentación
+oficial de [google cloud platform](https://cloud.google.com/sdk/gcloud/reference/run/deploy).
+en la que se puede configurar el despligue con los argumentos deseados.
+
+Una vez finalizado el despliegue, se puede acceder a la url que entrega la
+consola para ver el proyecto desplegado.
+
+
+**Saludos y feliz código**.
+<br />
+<br />
+<br />
+
+<Comments />
