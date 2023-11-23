@@ -1,0 +1,126 @@
+## GitHub Actions
+Para subir el proyecto a github, primero debemos crear un repositorio en github
+y luego subir el proyecto, esto puede ser realizado desde el sitio de github o
+desde la consola usando el CLI de GitHub con el siguiente comando.
+
+```bash
+gh repo create (Seguir los pasos que indica la consola)
+```
+
+```bash
+? What would you like to do? **Push an existing local repository to GitHub**
+? Path to local repository **.**
+? Repository name **nextjs-docker-githubaction-google-cloud**
+? Repository owner **<YOUR_USER>**
+? Description 
+? Visibility **Public / private**
+✓ Created repository <YOUR_USER>/nextjs-docker-githubaction-google-cloud on GitHub
+? Add a remote? **Yes**
+? What should the new remote be called? **origin**
+✓ Added remote git@github.com:<YOUR_USER>/nextjs-docker-githubaction-google-cloud.git
+? Would you like to push commits from the current branch to "origin"? Yes
+...
+✓ Pushed commits to git@github.com:<YOUR_USER>/nextjs-docker-githubaction-google-cloud.git
+```
+
+### GitHub Actions
+Para desplegar el proyecto con GitHub Actions, se puede seguir la configuración 
+del workflow creada por los desarrolladores de google para la sección de acciones 
+dentro del mismo repositorio.
+
+Para esto primero debemos ir a la sección de acciones del repositorio
+
+![GitHub Actions](/assets/next-google/github-actions.png)
+
+Luego debemos buscar las acciones de google cloud platform 
+
+![GitHub Actions](/assets/next-google/github-actions-gcp.png)
+
+Y presionar el botón configure dentro de la opción "Deploy to Cloud Run from source".
+
+![GitHub Actions](/assets/next-google/github-actions-gcp-deploy.png)
+
+Esto crear un archivo llamado `google-cloudrun-source.yml` dentro de la carpeta 
+`.github/workflows`, el cual debemos modificar actualizando el ID del proyecto, 
+el nombre del servicio y la región en la que se desplegará el proyecto, con los
+datos extraidos de la consola de google cloud platform.
+
+```yml
+env:
+  PROJECT_ID: 
+  SERVICE: 
+  REGION: 
+```
+
+Además debemos modificar las credenciales de google cloud platform, para esto
+crearemos entornos de trabajo en github, y así posteriormente diferenciar los 
+entornos de desarrollo, pruebas y producción.
+
+Para esto debemos ir a la sección de configuración del repositorio e ingresar
+a la sección de entornos, creando los que necesitemos, para el caso del ejemplo
+se creará el entorno de desarrollo.
+
+![GitHub Actions](/assets/next-google/github-actions-env.png)
+
+
+
+
+### Credenciales de google cloud platform
+Una vez creado el entorno debemos agregar las credenciales de google cloud en la
+sección de secretos, para esto debemos seguir los siguientes pasos.
+
+1. Ir la consola de Google Cloud Platform.
+2. Navegar hasta IAM & Admin > Workload Identity Federation.
+3. Hacer clic en "CREATE POOL".
+4. Agregar un nombre al pool, por ejemplo, "Github Auth" y dejar las demás
+opciones de forma predeterminada.
+5. Presionar el botón continuar.
+6. En la opcion Add a provider to this pool, seleccionar "OpenID connect (OIDC)".
+7. En Provider name, agregar un nombre, por ejemplo, "Github Action".
+8. En Provider ID, agregar un identificador, por ejemplo, "github-action".
+9. En Issuer URL, agregar https://token.actions.githubusercontent.com.
+10. JWK file URL, dejar en blanco.
+11. Audience, seleccionar "Default audience".
+12. Presionar el botón continuar.
+13. Llega el momento de configurar los atributos del proveedor, para eso debemos
+agregar los siguientes mapeos.
+    - google.subject = assertion.sub
+    - attribute.actor = assertion.actor
+    - attribute.repository = assertion.repository
+14. Presionar el botón guardar.
+
+Ahora debemos crear un servicio de google cloud platform para el proyecto
+(Crear cuenta de servicio en google cloud platform)
+
+Ahora queda conectar el servicio con el proveedor de identidad, para eso se realizan
+los siguientes pasos.
+
+1. Navegar hasta IAM & Admin > Services Accounts.
+2. Seleccionar el servicio que se desea conectar con el proveedor de identidad.
+3. Seleccionar la pestaña "PERMISSIONS".
+4. Presionar el botón "Grant Access".
+5. Para el campo "New Principals", se deben concatenar 2 elementos "IAM Principal" y
+/atribute.repository/<nombre_de_usuario_github>/<nombre_del_repositorio>.
+
+principal://iam.googleapis.com/projects/172970076159/locations/global/workloadIdentityPools/github-auth/subject/SUBJECT_ATTRIBUTE_VALUE/marcelolara/nextjs-docker-githubaction-google-cloud
+principal://iam.googleapis.com/projects/172970076159/locations/global/workloadIdentityPools/github-auth/attribute.repository/marcelolara/nextjs-docker-githubaction-google-cloud
+
+projects/366072903054/locations/global/workloadIdentityPools/github-auth/providers/github-action
+
+6. Asignar el rol "Workload Identity User"
+7. Presionar el botón "SAVE".
+
+
+Para extraer el WIF_PROVIDER de la consola de google cloud platform, se debe
+seguir los siguientes pasos.
+
+1. Navegar hasta IAM & Admin > Workload Identity Federation.
+2. Seleccionar el proveedor de identidad que se desea conectar, en este caso Github Auth.
+3. Ir a editar el proveedor a utilizar "Github Action", y copiar el valor que se encuentra
+bajo el campo "Audiences".
+4. Dejar solo el valor que se encuentra posterior a "projects/...".
+5. Navegar a la sección de secretos del repositorio de github para el entorno ya creado (develop).
+6. Agregar un nuevo secreto con el nombre WIF_PROVIDER y el valor copiado anteriormente.
+7. La variable secreta WIF_SERVICE_ACCOUNT equivale al email creado para el servicio 
+de google cloud platform y puede ser obtenido desde la consola de google cloud 
+platform en la sección IAM & Admin > Service Accounts.
