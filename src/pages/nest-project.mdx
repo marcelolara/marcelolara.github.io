@@ -292,9 +292,13 @@ Con esto al abrir la url http://localhost:3000/docs se podrá ver la documentaci
 npx nest generate resource users
 ```
 
-Esto genera la carpeta ./src/users y los archivos users.controller.ts y users.module.ts
+Esto genera la carpeta ./src/users con varios archivos entre ellos 
+users.controller.ts y users.module.ts
 
-A los archivos se les debe agregar el siguiente contenido.
+### Listar usuarios
+
+Lo primero que haremos será listar todos los usuarios de la base de datos.
+para eso modificaremos el archivo users.controller.ts
 
 ```ts filename="src/users/users.module.ts" copy
 import { Module } from '@nestjs/common';
@@ -309,6 +313,8 @@ import { PrismaModule } from 'src/prisma/prisma.module';
 })
 export class UsersModule { }
 ```
+
+Y el archivo users.service.ts
 
 ```ts filename="src/users/users.service.ts" copy
 import { Injectable } from '@nestjs/common';
@@ -342,6 +348,104 @@ export class UsersService {
 }
 ```
 
+### Obtener un usuario por id
 
+Agregaremos un endpoint para obtener un usuario por id.
 
+* GET /users/:id *
 
+Para esto modificaremos el archivo users.controller.ts
+
+```ts filename="src/users/users.controller.ts" copy
+@Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.usersService.findOne(id);
+  }
+```
+
+Y el archivo users.service.ts
+
+```ts filename="src/users/users.service.ts" copy
+  findOne(id: string) {
+    return this.prisma.user.findUnique({ where: {id}})
+  }
+```  
+  
+Se puede probar yendo a http://localhost:3000/api. 
+Haciendo clic en el menú desplegable GET /users/\{id\}. 
+Se presiona Probar, se agrega un valor válido al parámetro id y se presiona 
+Ejecutar para ver el resultado.
+
+### Crear un usuario
+
+*POST /users*
+
+Para agreegaremos el siguiente contenido al archivo users/dto/create-user.dto.ts
+
+```ts filename="src/users/dto/create-user.dto.ts" copy
+import { ApiProperty } from '@nestjs/swagger';
+
+export class CreateUserDto {
+  @ApiProperty()
+  name: string;
+
+  @ApiProperty()
+  email: string;
+
+  @ApiProperty()
+  password: string;
+}
+```
+
+Y modificaremos el archivo del servicio users.service.ts
+
+```ts filename="src/users/users.service.ts" copy
+  create(createUserDto: CreateUserDto) {
+    return this.prisma.user.create({ data: createUserDto });
+  }
+```
+
+### Actualizar un usuario
+
+*PATCH /articles/:id*
+
+Para esto modificaremos el archivo del servicio users.service.ts
+
+```ts filename="src/users/users.service.ts" copy
+  update(id: string, updateUserDto: UpdateUserDto) {
+    return this.prisma.user.update({ 
+      where: { id }, 
+      data: updateUserDto 
+    });
+  }
+```
+
+Y el controlador users.controller.ts
+
+```ts filename="src/users/users.controller.ts" copy
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+    return this.usersService.update(id, updateUserDto);
+  }
+```
+
+### Eliminar un usuario
+
+*DELETE /articles/:id*
+
+Modificaremos el archivo del servicio users.service.ts para agregar el método remove
+
+```ts filename="src/users/users.service.ts" copy
+  remove(id: string) {
+    return this.prisma.user.delete({ where: { id } });
+  }
+```
+
+Y el controlador users.controller.ts
+
+```ts filename="src/users/users.controller.ts" copy
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.usersService.remove(id);
+  }
+```
