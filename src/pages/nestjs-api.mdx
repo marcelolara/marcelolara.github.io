@@ -1,4 +1,6 @@
-# Proyecto NestJS
+import Comments from '../components/Comments'
+
+# Api rest con NestJS, Docker, Prisma y Postgres
 
 ## Instalación
 
@@ -7,7 +9,7 @@ $ npm i -g @nestjs/cli
 $ nest new mi-api
 ```
 
-## Contenizar la aplicación
+## Contenerizar la aplicación
 
 Crear el archivo Dockerfile en la raíz del proyecto
 
@@ -18,7 +20,7 @@ $ touch Dockerfile
 Copiar el siguiente contenido en el archivo.
 
 ```dockerfile filename="Dockerfile" copy
-FROM node:21-alpine As development
+FROM node:21-alpine
 
 WORKDIR /usr/src/app
 
@@ -31,27 +33,6 @@ COPY . .
 RUN npx prisma generate
 
 RUN npm run build
-
-
-
-FROM node:21-alpine as production
-
-ARG NODE_ENV=production
-ENV NODE_ENV=${NODE_ENV}
-
-WORKDIR /usr/src/app
-
-COPY package*.json ./
-
-RUN npm install
-
-COPY . .
-
-RUN npx prisma generate
-
-COPY --from=development /usr/src/app/dist ./dist
-
-CMD ["node", "dist/main"]
 ```
 
 Crear archivo docker-compose.yml en la raíz del proyecto
@@ -173,7 +154,7 @@ model User {
 $ npx prisma migrate dev --name init
 ```
 
-### Alimentar la base de datos con datos de iniciales
+### Alimentar la base de datos con datos iniciales
 
 Para eso es necesario crear el archivo prisma/seed.ts
 
@@ -286,6 +267,7 @@ bootstrap();
 
 Con esto al abrir la url http://localhost:3000/docs se podrá ver la documentación de la api.
 
+
 ### Generar el recurso de usuarios
 
 ```bash filename="> Terminal" copy
@@ -293,12 +275,12 @@ npx nest generate resource users
 ```
 
 Esto genera la carpeta ./src/users con varios archivos entre ellos 
-users.controller.ts y users.module.ts
+users.service, users.controller.ts y users.module.ts
 
 ### Listar usuarios
 
 Lo primero que haremos será listar todos los usuarios de la base de datos.
-para eso modificaremos el archivo users.controller.ts
+para eso modificaremos el archivo users.module.ts
 
 ```ts filename="src/users/users.module.ts" copy
 import { Module } from '@nestjs/common';
@@ -380,7 +362,7 @@ Ejecutar para ver el resultado.
 
 *POST /users*
 
-Para agreegaremos el siguiente contenido al archivo users/dto/create-user.dto.ts
+Agregaremos el siguiente contenido al archivo users/dto/create-user.dto.ts
 
 ```ts filename="src/users/dto/create-user.dto.ts" copy
 import { ApiProperty } from '@nestjs/swagger';
@@ -449,3 +431,10 @@ Y el controlador users.controller.ts
     return this.usersService.remove(id);
   }
 ```
+
+**Feliz código**.
+<br />
+<br />
+<br />
+
+<Comments />
