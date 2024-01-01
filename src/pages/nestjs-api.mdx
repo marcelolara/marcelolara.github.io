@@ -1,0 +1,440 @@
+import Comments from '../components/Comments'
+
+# Api rest con NestJS, Docker, Prisma y Postgres
+
+## Instalación
+
+```bash filename="> Terminal" copy 
+$ npm i -g @nestjs/cli
+$ nest new mi-api
+```
+
+## Contenerizar la aplicación
+
+Crear el archivo Dockerfile en la raíz del proyecto
+
+```bash filename="> Terminal" copy
+$ touch Dockerfile
+```
+
+Copiar el siguiente contenido en el archivo.
+
+```dockerfile filename="Dockerfile" copy
+FROM node:21-alpine
+
+WORKDIR /usr/src/app
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+
+RUN npx prisma generate
+
+RUN npm run build
+```
+
+Crear archivo docker-compose.yml en la raíz del proyecto
+
+```bash filename="> Terminal" copy
+$ touch docker-compose.yml
+```
+
+Copiar el siguiente contenido en el archivo.
+
+```yaml filename="docker-compose.yml" copy
+version: '3.8'
+services:
+  app:
+    container_name: backend-services
+    image: backend-services
+    build:
+        context: .
+        dockerfile: ./Dockerfile
+    command: npm run start:debug
+    ports:
+        - 3000:3000
+    networks:
+        - backend-services
+    volumes:
+        - .:/usr/src/app
+        - /usr/src/app/node_modules
+    restart: unless-stopped
+    depends_on:
+        - postgres
+
+  postgres:
+    container_name: postgres
+    image: postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+    networks:
+      - backend-services
+
+
+volumes:
+  postgres:
+networks:
+  backend-services:
+
+```
+
+Crear archivo .env en la raíz del proyecto
+
+```bash filename="> Terminal" copy
+$ touch .env
+```
+
+Copiar el siguiente contenido en el archivo.
+
+```env filename=".env" copy
+SERVER_PORT=3000
+
+POSTGRES_USER=postgres-user
+POSTGRES_PASSWORD=postgres-password
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_DB=postgres-db
+
+PORT=3000
+MODE=DEV
+
+DATABASE_URL="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?connect_timeout=300"
+```
+
+## Iniciar el proyecto con docker-compose
+
+```bash filename="> Terminal" copy
+$ docker-compose up
+```
+
+
+## Preparar la base de datos
+
+### Instalar prisma
+
+```bash filename="> Terminal" copy
+$ npm install -D prisma
+```
+
+### Inicializar prisma
+
+Esto crea el archivo prisma/schema.prisma
+
+```bash filename="> Terminal" copy
+$ npx prisma init
+```
+
+### Crear el modelo
+
+Agregar al final de prisma/schema.prisma
+
+```prisma filename="prisma/schema.prisma" copy
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+```
+
+### Migrar la base de datos
+
+```bash filename="> Terminal" copy
+$ npx prisma migrate dev --name init
+```
+
+### Alimentar la base de datos con datos iniciales
+
+Para eso es necesario crear el archivo prisma/seed.ts
+
+```bash filename="> Terminal" copy
+$ touch prisma/seed.ts
+```
+
+Copiar el siguiente contenido en el archivo.
+
+```ts filename="prisma/seed.ts" copy
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+async function main() {
+  await prisma.user.create({
+    data: {
+      name: 'Marcelo',
+      email: 'chelop@gmail.com',
+      password: '123456',
+    }
+  })
+}
+
+main()
+  .catch(e => {
+    throw e;
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
+```
+
+Luego es necesario agregar la sección de prisma al archivo package.json
+
+```json filename="package.json" copy
+"prisma": {
+      "seed": "ts-node prisma/seed.ts"
+    }
+```
+
+Finalmente ejecutar el script
+
+```bash filename="> Terminal" copy
+$ npx prisma db seed
+```
+
+### Crear el servicio de prisma
+
+```bash filename="> Terminal" copy
+npx nest generate module prisma
+npx nest generate service prisma
+```
+
+Esto genera la carpeta ./src/prisma y los archivos prisma.module.ts y prisma.service.ts
+en su interior.
+
+Estos debeen tener el siguiente contenido.
+
+```ts filename="src/prisma/prisma.module.ts" copy
+import { Module } from '@nestjs/common';
+import { PrismaService } from './prisma.service';
+
+@Module({
+  providers: [PrismaService],
+  exports: [PrismaService]
+})
+export class PrismaModule { }
+```
+
+```ts filename="src/prisma/prisma.service.ts" copy
+import { Injectable } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
+
+@Injectable()
+export class PrismaService extends PrismaClient { }
+```
+
+## Configurar swagger
+Se agregará swagger a la aplicación para documentar los endpoints y poder probarlos.
+
+```bash filename="> Terminal" copy
+npm install --save @nestjs/swagger swagger-ui-express
+```
+
+Agregar la sección swagger a la configuración de la aplicación en main.ts
+
+```ts filename="src/main.ts" copy
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+
+  const config = new DocumentBuilder()
+    .setTitle('NestJS Prisma API')
+    .setDescription('Descripción de NestJS Prisma API')
+    .setVersion('1.0')
+    .addTag('nestjs-prisma')
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('docs', app, document);
+
+  await app.listen(3000);
+}
+bootstrap();
+```
+
+Con esto al abrir la url http://localhost:3000/docs se podrá ver la documentación de la api.
+
+
+### Generar el recurso de usuarios
+
+```bash filename="> Terminal" copy
+npx nest generate resource users
+```
+
+Esto genera la carpeta ./src/users con varios archivos entre ellos 
+users.service, users.controller.ts y users.module.ts
+
+### Listar usuarios
+
+Lo primero que haremos será listar todos los usuarios de la base de datos.
+para eso modificaremos el archivo users.module.ts
+
+```ts filename="src/users/users.module.ts" copy
+import { Module } from '@nestjs/common';
+import { UsersService } from './users.service';
+import { UsersController } from './users.controller';
+import { PrismaModule } from 'src/prisma/prisma.module';
+
+@Module({
+  controllers: [UsersController],
+  providers: [UsersService],
+  imports: [PrismaModule],
+})
+export class UsersModule { }
+```
+
+Y el archivo users.service.ts
+
+```ts filename="src/users/users.service.ts" copy
+import { Injectable } from '@nestjs/common';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { PrismaService } from 'src/prisma/prisma.service';
+
+@Injectable()
+export class UsersService {
+  constructor(private prisma: PrismaService) { }
+
+  create(createUserDto: CreateUserDto) {
+    return 'This action adds a new user';
+  }
+
+  findAll() {
+    return this.prisma.user.findMany();
+  }
+
+  findOne(id: number) {
+    return `This action returns a #${id} user`;
+  }
+
+  update(id: number, updateUserDto: UpdateUserDto) {
+    return `This action updates a #${id} user`;
+  }
+
+  remove(id: number) {
+    return `This action removes a #${id} user`;
+  }
+}
+```
+
+### Obtener un usuario por id
+
+Agregaremos un endpoint para obtener un usuario por id.
+
+* GET /users/:id *
+
+Para esto modificaremos el archivo users.controller.ts
+
+```ts filename="src/users/users.controller.ts" copy
+@Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.usersService.findOne(id);
+  }
+```
+
+Y el archivo users.service.ts
+
+```ts filename="src/users/users.service.ts" copy
+  findOne(id: string) {
+    return this.prisma.user.findUnique({ where: {id}})
+  }
+```  
+  
+Se puede probar yendo a http://localhost:3000/api. 
+Haciendo clic en el menú desplegable GET /users/\{id\}. 
+Se presiona Probar, se agrega un valor válido al parámetro id y se presiona 
+Ejecutar para ver el resultado.
+
+### Crear un usuario
+
+*POST /users*
+
+Agregaremos el siguiente contenido al archivo users/dto/create-user.dto.ts
+
+```ts filename="src/users/dto/create-user.dto.ts" copy
+import { ApiProperty } from '@nestjs/swagger';
+
+export class CreateUserDto {
+  @ApiProperty()
+  name: string;
+
+  @ApiProperty()
+  email: string;
+
+  @ApiProperty()
+  password: string;
+}
+```
+
+Y modificaremos el archivo del servicio users.service.ts
+
+```ts filename="src/users/users.service.ts" copy
+  create(createUserDto: CreateUserDto) {
+    return this.prisma.user.create({ data: createUserDto });
+  }
+```
+
+### Actualizar un usuario
+
+*PATCH /articles/:id*
+
+Para esto modificaremos el archivo del servicio users.service.ts
+
+```ts filename="src/users/users.service.ts" copy
+  update(id: string, updateUserDto: UpdateUserDto) {
+    return this.prisma.user.update({ 
+      where: { id }, 
+      data: updateUserDto 
+    });
+  }
+```
+
+Y el controlador users.controller.ts
+
+```ts filename="src/users/users.controller.ts" copy
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+    return this.usersService.update(id, updateUserDto);
+  }
+```
+
+### Eliminar un usuario
+
+*DELETE /articles/:id*
+
+Modificaremos el archivo del servicio users.service.ts para agregar el método remove
+
+```ts filename="src/users/users.service.ts" copy
+  remove(id: string) {
+    return this.prisma.user.delete({ where: { id } });
+  }
+```
+
+Y el controlador users.controller.ts
+
+```ts filename="src/users/users.controller.ts" copy
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.usersService.remove(id);
+  }
+```
+
+**Feliz código**.
+<br />
+<br />
+<br />
+
+<Comments />
